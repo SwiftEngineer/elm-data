@@ -1,19 +1,35 @@
-module ElmData.Resource exposing (..)
+module ElmData.Resource exposing (Resource, ResourceMsg, resource)
 
+{-|
+    Resource allows you to make requests on behalf of a DAO, without having to think about the state of the DAO
+
+    @docs Resource, ResourceMsg, resource
+-}
+
+import ElmData.DAO exposing (..)
 import ElmData.Data exposing (..)
+import ElmData.Messages exposing (..)
 
 import Http
 
+
+{-| A Resource
+-}
 type alias Resource recordType externalMsg =
     { create : (recordType -> Cmd externalMsg)
     , fetch : (String -> Cmd externalMsg)
     , update : (recordType -> Cmd externalMsg)
     }
 
+{-| A Resource Message
+-}
 type ResourceMsg recordType
     = Success recordType
     | Failure RequestError
 
+
+{-| Creator for a Resource
+-}
 resource : DAO recordType externalMsg -> (ResourceMsg recordType -> localMsg) -> (localMsg -> externalMsg) -> Resource recordType externalMsg
 resource dao resourceToLocal localToExternal =
     { create = curryPost dao (createResourceToExternalMsgTranslation resourceToLocal localToExternal)
