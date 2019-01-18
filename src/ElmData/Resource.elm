@@ -1,4 +1,4 @@
-module ElmData.Resource exposing (Resource, ResourceMsg, resource)
+module ElmData.Resource exposing (Resource, ResourceMsg(..), resource)
 
 {-|
     Resource allows you to make requests on behalf of a DAO, without having to think about the state of the DAO
