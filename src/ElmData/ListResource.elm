@@ -18,7 +18,7 @@ type ListResourceMsg recordType
     | Failure RequestError
 
 --curryFetchAll : DAO recordType msg -> (RequestResults recordType -> msg) -> Cmd msg
-listResource : DAO recordType externalMsg -> (ListResourceMsg recordType -> localMsg) -> (localMsg -> externalMsg) -> ListResource externalMsg
+listResource : DAO recordType -> (ListResourceMsg recordType -> localMsg) -> (localMsg -> externalMsg) -> ListResource externalMsg
 listResource dao listResourceToLocal localToExternal =
     { fetchAll = curryFetchAll dao (createResourceToExternalMsgTranslation listResourceToLocal localToExternal)
     , query = curryQuery dao (createResourceToExternalMsgTranslation listResourceToLocal localToExternal)

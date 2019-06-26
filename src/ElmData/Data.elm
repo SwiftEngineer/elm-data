@@ -16,22 +16,14 @@ import ElmData.DAO exposing (..)
 
 -- Creates a function that will create and send requests for a given record.
 --
---curryFetch : String -> String -> (DAOMsg recordType -> msg) -> Json.Decode.Decoder recordType -> (String -> Cmd msg)
-curryFetch : DAO recordType msg -> (RequestResult recordType -> msg) -> (String -> Cmd msg)
+curryFetch : DAO recordType -> (RequestResult recordType -> msg) -> (String -> Cmd msg)
 curryFetch dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
-
-        -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
-        -- two functions below this line. The first one creates requests, the send one sends them.
-
-        -- this is the function that will be used to CREATE a http request
-        createRequestForSingleRecord identifier = Http.request
+        -- this is the function that will be used to CREATE a http request (not send it)
+        createRequest identifier = Http.request
             { method = "GET"
             , headers = 
                 [ Http.header "Authorization" dao.authToken
@@ -45,29 +37,26 @@ curryFetch dao returnMsg =
 
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        requestPromise identifier = Http.send requestHandler (createRequestForSingleRecord identifier)
+        sendRequest identifier = Http.send requestHandler (createRequest identifier)
     in
         -- put it all together to create a function that creates THEN sends a request for a given record
-        \identifier -> requestPromise identifier
+        \identifier -> sendRequest identifier
 
 
 -- Creates a function that will send request to delete a given record.
 --
-curryDelete : DAO recordType msg -> (RequestResults recordType -> msg) -> (String -> Cmd msg)
+curryDelete : DAO recordType -> (RequestResults recordType -> msg) -> (String -> Cmd msg)
 curryDelete dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultsMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
 
         -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
         -- two functions below this line. The first one creates requests, the send one sends them.
 
         -- this is the function that will be used to CREATE a http request
-        createRequestForSingleRecord identifier = Http.request
+        createRequest identifier = Http.request
             { method = "DELETE"
             , headers = 
                 [ Http.header "Authorization" dao.authToken
@@ -81,29 +70,26 @@ curryDelete dao returnMsg =
 
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        requestPromise identifier = Http.send requestHandler (createRequestForSingleRecord identifier)
+        sendRequest identifier = Http.send requestHandler (createRequest identifier)
     in
         -- put it all together to create a function that creates THEN sends a request for a given record
-        \identifier -> requestPromise identifier
+        \identifier -> sendRequest identifier
 
 
 -- Creates a function that will create and send requests for records based on a query.
 --
 --curryQuery : String -> String -> (DAOMsg recordType -> msg) -> Json.Decode.Decoder (List recordType) -> (List QueryParam -> Cmd msg)
-curryQuery : DAO recordType msg -> (RequestResults recordType -> msg) -> (List QueryParam -> Cmd msg)
+curryQuery : DAO recordType -> (RequestResults recordType -> msg) -> (List QueryParam -> Cmd msg)
 curryQuery dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultsMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
         -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
         -- two functions below this line. The first one creates requests, the send one sends them.
 
         -- this is the function that will be used to CREATE a http request
-        createRequestToQuery queryParams = Http.request
+        createRequest queryParams = Http.request
             { method = "GET"
             , headers = 
                 [ Http.header "Authorization" dao.authToken
@@ -117,27 +103,24 @@ curryQuery dao returnMsg =
 
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        requestPromise queryParams = Http.send requestHandler (createRequestToQuery queryParams)
+        sendRequest queryParams = Http.send requestHandler (createRequest queryParams)
     in
         -- put it all together to create a function that creates THEN sends a request for a given record
-        \queryParams -> requestPromise queryParams
+        \queryParams -> sendRequest queryParams
 
 -- Creates a function that will create and send requests for records
 --
-curryFetchAll : DAO recordType msg -> (RequestResults recordType -> msg) -> Cmd msg
+curryFetchAll : DAO recordType -> (RequestResults recordType -> msg) -> Cmd msg
 curryFetchAll dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultsMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
         -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
         -- two functions below this line. The first one creates requests, the send one sends them.
 
         -- this is the function that will be used to CREATE a http request
-        createRequestToQuery = Http.request
+        createRequest = Http.request
             { method = "GET"
             , headers = 
                 [ Http.header "Authorization" dao.authToken
@@ -152,26 +135,19 @@ curryFetchAll dao returnMsg =
     in
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        Http.send requestHandler createRequestToQuery
+        Http.send requestHandler createRequest
 
 
 -- Creates a function that will create and send requests to persist a given record.
 --
-curryPost : DAO recordType msg -> (RequestResult recordType -> msg) -> (recordType -> Cmd msg)
+curryPost : DAO recordType -> (RequestResult recordType -> msg) -> (recordType -> Cmd msg)
 curryPost dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
-
-        -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
-        -- two functions below this line. The first one creates requests, the send one sends them.
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
         -- this is the function that will be used to CREATE a http request based on some record's identifier
---        createRequestToQuery recordToPersist = Http.post dao.apiUrl (Http.jsonBody <| dao.serialize recordToPersist) dao.deserialize
-        createRequestToQuery recordToPersist = Http.request
+        createRequest recordToPersist = Http.request
             { method = "POST"
             , headers =
                 [ Http.header "Authorization" dao.authToken
@@ -185,27 +161,21 @@ curryPost dao returnMsg =
 
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        requestPromise recordToPersist = Http.send requestHandler <| createRequestToQuery recordToPersist
+        sendRequest recordToPersist = Http.send requestHandler <| createRequest recordToPersist
     in
         -- put it all together to create a function that creates THEN sends a request for a given record
-        \recordToPersist -> requestPromise recordToPersist
+        \recordToPersist -> sendRequest recordToPersist
 
 -- Creates a function that will create and send requests to update a given record.
 --
-curryPut : DAO recordType msg -> (RequestResult recordType -> msg) -> (recordType -> Cmd msg)
+curryPut : DAO recordType -> (RequestResult recordType -> msg) -> (recordType -> Cmd msg)
 curryPut dao returnMsg =
     let
-        -- this will statement wraps the response msg with a dao specific one,
-        -- this helps insure that all messages will go through a DAO update,
-        -- so that we can make sure that all Resources can talk to one another
-        -- through their respective DAOs.
-        requestHandler result = dao.msgTranslator (RequestResultMsg (mapHttpErrors result) (returnMsg (mapHttpErrors result)))
-
-        -- PAY ATTENTION: The functions above are bullshit, what's more important are these next
-        -- two functions below this line. The first one creates requests, the send one sends them.
+        -- create a request handler that maps the results in order to simplify the errors.
+        requestHandler result = returnMsg (mapHttpErrors result)
 
         -- this is the function that will be used to CREATE a http request based on some record's identifier
-        createRequestToQuery recordToPersist = Http.request
+        createRequest recordToPersist = Http.request
             { method = "PUT"
             , headers = []
             , url = dao.apiUrl
@@ -214,15 +184,13 @@ curryPut dao returnMsg =
             , timeout = Nothing
             , withCredentials = False
             }
-        
-        -- Http.put apiUrl (Http.jsonBody <| recordEncoder recordToPersist) recordDecoder
 
         -- this is the function that will be used to SEND an Http Request
         -- (notice how we call the method above)
-        requestPromise recordToPersist = Http.send requestHandler <| createRequestToQuery recordToPersist
+        sendRequest recordToPersist = Http.send requestHandler <| createRequest recordToPersist
     in
         -- put it all together to create a function that creates THEN sends a request for a given record
-        \recordToPersist -> requestPromise recordToPersist
+        \recordToPersist -> sendRequest recordToPersist
 
 
 -- HELPERS

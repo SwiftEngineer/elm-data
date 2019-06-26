@@ -30,7 +30,7 @@ type ResourceMsg recordType
 
 {-| Creator for a Resource
 -}
-resource : DAO recordType externalMsg -> (ResourceMsg recordType -> localMsg) -> (localMsg -> externalMsg) -> Resource recordType externalMsg
+resource : DAO recordType -> (ResourceMsg recordType -> localMsg) -> (localMsg -> externalMsg) -> Resource recordType externalMsg
 resource dao resourceToLocal localToExternal =
     { create = curryPost dao (createResourceToExternalMsgTranslation resourceToLocal localToExternal)
     , fetch = curryFetch dao (createResourceToExternalMsgTranslation resourceToLocal localToExternal)
