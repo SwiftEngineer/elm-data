@@ -1,4 +1,4 @@
-module ElmData.Session exposing (Session(..), SessionData, sessionFromToken, SessionCreationResult)
+module ElmData.Session exposing (Session(..), SessionData, sessionFromToken, SessionCreationResult(..))
 
 {-|
     Sessions exist to hold all state associated with your requests.
