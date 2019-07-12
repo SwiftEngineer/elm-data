@@ -10,15 +10,15 @@ import ElmData.DAO exposing (..)
 import ElmData.Data exposing (..)
 import ElmData.Messages exposing (..)
 
-import Http
+import ElmData.Session exposing (Session(..))
 
 
 {-| A Resource
 -}
 type alias Resource recordType externalMsg =
-    { create : (recordType -> Cmd externalMsg)
-    , fetch : (String -> Cmd externalMsg)
-    , update : (recordType -> Cmd externalMsg)
+    { create : Session -> recordType -> Cmd externalMsg
+    , fetch : Session -> String -> Cmd externalMsg
+    , update : Session -> recordType -> Cmd externalMsg
     }
 
 {-| A Resource Message

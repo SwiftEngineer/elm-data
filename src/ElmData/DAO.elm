@@ -9,12 +9,15 @@ module ElmData.DAO exposing (DAO, createDAO)
 import Json.Decode
 import Json.Encode
 
+import ElmData.AuthConfig as AuthConfig exposing (AuthConfig)
+
 {-|
     the dao
 -}
 type alias DAO recordType =
     { apiUrl : String
-    , authToken : String
+    -- auth config
+    , authConfig : AuthConfig
 
     -- serialization
     , listDeserialize : Json.Decode.Decoder (List recordType)
@@ -25,13 +28,29 @@ type alias DAO recordType =
 {-|
     Function used to create a DAO
 -}
-createDAO : String -> String -> Json.Decode.Decoder (List recordType) -> Json.Decode.Decoder recordType -> (recordType -> Json.Encode.Value) -> (DAO recordType)
-createDAO apiUrl authToken listDeserializer deserializer serializer =
+createDAO : String -> Json.Decode.Decoder (List recordType) -> Json.Decode.Decoder recordType -> (recordType -> Json.Encode.Value) -> (DAO recordType)
+createDAO apiUrl listDeserializer deserializer serializer =
     { apiUrl = apiUrl
-    , authToken = authToken
+    , authConfig = AuthConfig.default
 
     -- serialization
     , listDeserialize = listDeserializer
     , deserialize = deserializer
     , serialize = serializer
     }
+
+{-|
+    Function used to create a DAO
+-}
+createAuthenticatedDAO : String -> AuthConfig -> Json.Decode.Decoder (List recordType) -> Json.Decode.Decoder recordType -> (recordType -> Json.Encode.Value) -> (DAO recordType)
+createAuthenticatedDAO apiUrl authConfig listDeserializer deserializer serializer =
+    { apiUrl = apiUrl
+    , authConfig = authConfig
+
+    -- serialization
+    , listDeserialize = listDeserializer
+    , deserialize = deserializer
+    , serialize = serializer
+    }
+
+

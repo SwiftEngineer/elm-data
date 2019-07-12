@@ -5,12 +5,12 @@ import ElmData.Data exposing (..)
 import ElmData.Messages exposing (..)
 import ElmData.QueryParam exposing (..)
 
-import Http
+import ElmData.Session exposing (Session(..))
 
 type alias ListResource externalMsg =
-    { fetchAll : Cmd externalMsg
-    , query : (List QueryParam -> Cmd externalMsg)
-    , delete : (String -> Cmd externalMsg)
+    { fetchAll : Session -> Cmd externalMsg
+    , query : Session -> List QueryParam -> Cmd externalMsg
+    , delete : Session -> String -> Cmd externalMsg
     }
 
 type ListResourceMsg recordType
