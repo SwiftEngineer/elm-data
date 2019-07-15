@@ -1,18 +1,17 @@
-module ElmData.Session exposing (Session(..), SessionData, sessionFromToken, SessionCreationResult(..))
+module ElmData.Session exposing (Session(..), SessionData, checkSessionExpiration, checkError, SessionFailure(..))
 
 {-|
     Sessions exist to hold all state associated with your requests.
 
     Right now that's just Auth data, but I think this could also be a great place for cached data to live as well.
 
-    @docs Session, SessionData, sessionFromToken, SessionCreationResult
+    @docs Session, SessionData, checkSessionExpiration, checkError, SessionFailure
 -}
 
 import Http exposing (..)
-import Jwt exposing (..)
+import Jwt exposing (JwtError(..))
 
-import Json.Decode
-import Json.Decode.Pipeline exposing (required)
+import Time exposing (..)
 
 
 {-| The Session
@@ -21,86 +20,58 @@ type Session
     = Unauthenticated
     | Active SessionData
 
-{-| Data related to an authenticated session
+{-|
+    Data related to an authenticated session
 -}
 type alias SessionData =
   { authToken : String
-  , expiration : Float
+  , expiration : Int
   }
-
-{-| Basic Jwt Claims. In the future this should be configurable.
--}
-type alias JwtClaims =
-    { iss : String
-    , exp : Float
-    }
 
 -- Session Creation --
 
 {-| Result of the Creation of a Session
 -}
-type SessionCreationResult
-    = Success Session
-    | Failure String
+type SessionFailure
+    = Failure String
     | Corrupt
     | ExpiredSession
 
--- helper used to map jwt claims into session data
-sessionFromClaims : String -> JwtClaims -> SessionData
-sessionFromClaims authToken claims =
-    { authToken = authToken
-    , expiration = claims.exp
-    }
 
-
-{-| Used to attempt to create a Session from a JWT
+{-| Check if session is expired
 -}
-sessionFromToken : String -> SessionCreationResult
-sessionFromToken authToken =
+checkSessionExpiration : Posix -> SessionData -> Result SessionFailure SessionData
+checkSessionExpiration now session =
     let
-        claimsDecoder = 
-            Json.Decode.succeed JwtClaims
-                |> required "iss" Json.Decode.string
-                |> required "exp" Json.Decode.float
+        secondsRemainingForSession =
+            (Time.posixToMillis now) - (session.expiration * 1000)
     in
-        case Jwt.decodeToken claimsDecoder authToken of
-                Ok claims ->
-                    Success <| Active <| sessionFromClaims authToken claims
-                Err jwtErr ->
-                    case jwtErr of
-                        TokenDecodeError _ ->
-                            Corrupt
-                        TokenExpired ->
-                            ExpiredSession
-                        _ ->
-                            Failure "Session was invalid"
+        case secondsRemainingForSession > 0 of
+            -- expired session
+            True ->
+                Err ExpiredSession
+
+            -- session valid
+            False ->
+                Ok session
 
 
-
--- Login over Http --
-
-tokenStringDecoder : Json.Decode.Decoder String
-tokenStringDecoder =
-    Json.Decode.field "token" Json.Decode.string
-
-handleJwtRequestResponse : (Result Http.Error String) -> SessionCreationResult
-handleJwtRequestResponse response =
-    case response of
-        Ok token ->
-            sessionFromToken token
-        Err err ->
-            case err of
-                BadUrl badUrl ->
-                    Failure "The server appears to be offline!"
-                Timeout ->
-                    Failure "Request to authenticate took too long! Please try again later!"
-                NetworkError ->
-                    Failure "Couldn't connect. Are you sure you have internet right now?"
-                BadStatus badResponse ->
-                    case badResponse.status.code of
-                        403 ->
-                            Failure "Failed to connect, please try again later!"
-                        _ ->
-                            Failure "Unable to authenticate with the provided credentials!"
-                BadPayload payload badResponse ->
-                    Failure "Our app is being funky. Please refresh the page before trying again!"
+{-| Check if a request failure was caused by the session
+-}
+checkError : Http.Error -> Maybe (SessionFailure)
+checkError err =
+    case err of
+        BadUrl _ ->
+            Nothing
+        Timeout ->
+            Nothing
+        NetworkError ->
+            Nothing
+        BadStatus badResponse ->
+            case badResponse.status.code of
+                403 ->
+                    Just <| Failure "Unable to authenticate with the provided credentials!"
+                _ ->
+                    Nothing
+        BadPayload _ _ ->
+            Nothing
