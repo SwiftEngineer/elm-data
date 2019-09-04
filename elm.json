@@ -1,9 +1,9 @@
 {
     "type": "package",
-    "name": "swiftengineer/elm-data",
+    "name": "SwiftEngineer/elm-data",
     "summary": "Data Persistence library for Elm applications",
     "license": "ISC",
-    "version": "7.0.0",
+    "version": "1.0.0",
     "exposed-modules": [
         "ElmData.DAO",
         "ElmData.Resource",
