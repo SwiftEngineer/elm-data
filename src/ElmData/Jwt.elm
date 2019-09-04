@@ -14,14 +14,15 @@ import Task exposing (Task)
 import Time exposing (..)
 
 import Json.Decode as Decode exposing (Decoder, Value, field)
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (required, optional)
 
 
 {-| Basic Jwt Claims. In the future this should be configurable.
 -}
 type alias JwtClaims =
-    { iss : String
-    , exp : Int
+    { issuer : String
+    , expiration : Int
+    , permissions : List String
     }
 
 -- helper used to map jwt claims into session data
@@ -38,6 +39,7 @@ jwtClaimsDecoder =
     Decode.succeed JwtClaims
         |> required "iss" Decode.string
         |> required "exp" Decode.int
+        |> optional "permissions" (Decode.list Decode.string) []
 
 
 {-| Checks a token for Expiry. Returns expiry or any errors that occurred in decoding.
