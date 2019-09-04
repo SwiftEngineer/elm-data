@@ -26,6 +26,7 @@ type Session
 type alias SessionData =
   { authToken : String
   , expiration : Int
+  , permissions : List String
   }
 
 -- Session Creation --

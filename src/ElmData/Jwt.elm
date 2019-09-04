@@ -29,7 +29,8 @@ type alias JwtClaims =
 sessionFromClaims : String -> JwtClaims -> SessionData
 sessionFromClaims authToken claims =
     { authToken = authToken
-    , expiration = claims.exp
+    , expiration = claims.expiration
+    , permissions = claims.permissions
     }
 
 {-| Decoder for JwtClaims
